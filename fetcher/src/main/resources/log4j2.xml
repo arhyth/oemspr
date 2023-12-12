@@ -1,12 +1,15 @@
 <Configuration status="WARN">
     <Appenders>
         <Console name="ConsoleJSONAppender" target="SYSTEM_OUT">
-            <JsonLayout complete="false" compact="true" properties="true"/>
+            <JsonLayout complete="false" compact="true" eventEol="true" properties="true"/>
         </Console>
     </Appenders>
     <Loggers>
         <Logger name="ConsoleJSONLogger" level="INFO" additivity="false">
             <AppenderRef ref="ConsoleJSONAppender" />
         </Logger>
+        <Root level="INFO">
+            <AppenderRef ref="ConsoleJSONAppender" />
+        </Root>
     </Loggers>
 </Configuration>

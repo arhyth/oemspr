@@ -5,8 +5,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.SQLException;
@@ -15,16 +17,16 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.message.MapMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class Fetcher {
-    private static final Logger logger = LogManager.getLogger("ConsoleJSONLogger");
+    private static final Logger logger = LoggerFactory.getLogger("ConsoleJSONLogger");
 
     private static final String holdSQL = "INSERT INTO %s (timestamp, base) VALUES (%d, '%s') RETURNING id";
+    private static final String rateSQL = "UPDATE %s SET pairs = '%s'::jsonb WHERE id = %d";
 
     public static void main(String[] args) {
         Map<String, String> env = System.getenv();
@@ -48,26 +50,13 @@ public class Fetcher {
         dbUrl = String.format("jdbc:postgresql://%s:%s/%s", dbHost, dbPort, dbName);
 
         try (Connection connection = DriverManager.getConnection(dbUrl, dbUsr, dbPwd);
-             Statement statement = connection.createStatement()) {
+             Statement statement = connection.createStatement();) {
             long now = Instant.now().truncatedTo(ChronoUnit.HOURS).getEpochSecond();
             String sql = String.format(holdSQL, "rates", now, "USD");
-
-            logger.info(new MapMessage()
-                .with("currency", "USD")
-                .with("ts", now));
             statement.execute(sql, Statement.RETURN_GENERATED_KEYS);
-
-            // statement.close();
-            // statement = connection.createStatement();
-            // double rid = statement.getGeneratedKeys().getDouble("id");
             ResultSet rs = statement.getGeneratedKeys();
             rs.next();
-            int rid = rs.getInt("id");
-            logger.fatal(new MapMessage()
-                .with("id", rid)
-                .with("currency", "USD")
-                .with("ts", now));
-            System.exit(1);
+            int rateID = rs.getInt("id");
 
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
@@ -75,13 +64,29 @@ public class Fetcher {
                 .uri(URI.create(String.format("https://openexchangerates.org/api/latest.json?app_id=%s", apiKey)))
                 .build();
             HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-            ObjectMapper mapper = new ObjectMapper();
             if (response.statusCode() != 200) {
-                logger.error(String.format("Request failed with status code: %d", response.statusCode()));
+                logger.atError()
+                    .addKeyValue("http_status", response.statusCode())
+                    .log("Request failed");
                 System.exit(1);
             }
+            ObjectMapper mapper = new ObjectMapper();
             Rate rate = mapper.readValue(response.body(), Rate.class);
-            logger.error(rate);
+            logger.atInfo()
+                .addKeyValue("id", rateID)
+                .addKeyValue("ts", now)
+                .addKeyValue("base", rate.base)
+                .log("Fetch rate successful");
+            try (Statement update = connection.createStatement()) {
+                mapper = new ObjectMapper();
+                byte[] bits = mapper.writeValueAsBytes(rate.pairs);
+                update.execute(String.format(rateSQL, "rates", new String(bits, StandardCharsets.UTF_8), rateID));
+                logger.atInfo()
+                    .addKeyValue("id", rateID)
+                    .addKeyValue("ts", now)
+                    .addKeyValue("base", rate.base)
+                    .log("Rate pairs updated");
+            }
         } catch (SQLException|IOException|InterruptedException e) {
             e.printStackTrace();
         }
