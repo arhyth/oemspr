@@ -1,4 +1,4 @@
-package org.arhyth.fetcher;
+package org.arhyth.oemspr.rates;
 
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

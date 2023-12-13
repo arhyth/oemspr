@@ -1,4 +1,4 @@
-package org.arhyth.fetcher;
+package org.arhyth.oemspr.fetcher;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -21,6 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.arhyth.oemspr.rates.Rate;
 
 public class Fetcher {
     private static final Logger logger = LoggerFactory.getLogger("ConsoleJSONLogger");
