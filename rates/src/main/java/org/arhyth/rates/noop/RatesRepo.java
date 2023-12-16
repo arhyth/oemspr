@@ -1,4 +1,4 @@
-package org.arhyth.server;
+package org.arhyth.oemspr.rates.noop;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -22,6 +22,12 @@ public class RatesRepo implements Repository {
     }
 
     public Rate latest() {
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         return rate;
     }
 }

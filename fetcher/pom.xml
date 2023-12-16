@@ -69,7 +69,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>org.arhyth.fetcher.Fetcher</mainClass>
+                            <mainClass>org.arhyth.oemspr.fetcher.Fetcher</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -83,13 +83,22 @@
                     <appendAssemblyId>false</appendAssemblyId>
                     <archive>
                         <manifest>
-                            <mainClass>org.arhyth.fetcher.Fetcher</mainClass>
+                            <mainClass>org.arhyth.oemspr.fetcher.Fetcher</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

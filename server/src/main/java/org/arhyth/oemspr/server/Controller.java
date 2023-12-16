@@ -22,7 +22,7 @@ public class Controller {
     private final Service ratesService;
 
     @Autowired
-    public Controller(@Qualifier("passthrough") Service ratesService) {
+    public Controller(@Qualifier("noop") Service ratesService) {
         this.ratesService = ratesService;
     }
 
